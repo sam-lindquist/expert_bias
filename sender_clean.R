@@ -3,8 +3,8 @@ library(Hmisc)
 library(DescTools)
 library(tidylog, warn.conflicts = FALSE)
 
-#path_to_dir <- "/Users/samuellindquist/Dropbox/expert_bias/code_data" # sams mac
-path_to_dir <- "C:/Users/slindquist/Dropbox/expert_bias/code_data" # sams windows
+path_to_dir <- "/Users/samuellindquist/Library/CloudStorage/Dropbox/expert_bias/code_data" # sams mac
+#path_to_dir <- "C:/Users/slindquist/Dropbox/expert_bias/code_data" # sams windows
 
 setwd(path_to_dir)
 
@@ -58,9 +58,9 @@ df <- df %>%
                                 grepl("(bde|bdl)", treatment) ~ "Biased Down"))
 
 # looking at revision of information after the treatment
-df$inflation_update <- df$prior_inflation_point - df$post_inflation_point
-df$ucsd_pop_update <- df$prior_ucsd_pop_point - df$post_ucsd_pop
-df$ucsd_rank_update <- df$ucsd_rank_prior_point - df$post_ucsd_rank
+df$inflation_update <- df$post_inflation_point - df$prior_inflation_point
+df$ucsd_pop_update <- df$post_ucsd_pop - df$prior_ucsd_pop_point
+df$ucsd_rank_update <- df$post_ucsd_rank - df$ucsd_rank_prior_point
 
 # accuracy outcomes 
 correct_inflation_forecast_march_23 <- 3.2 # "correct" inflation rate (as forecasted by the fed)

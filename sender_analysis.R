@@ -5,8 +5,8 @@ library(Hmisc)
 library(DescTools)
 library(stargazer)
 
-#path_to_dir <- "/Users/samuellindquist/Dropbox/expert_bias/code_data" # sams mac
-path_to_dir <- "C:/Users/slindquist/Dropbox/expert_bias/code_data" # sams windows
+path_to_dir <- "/Users/samuellindquist/Library/CloudStorage/Dropbox/expert_bias/code_data" # sams mac
+#path_to_dir <- "C:/Users/slindquist/Dropbox/expert_bias/code_data" # sams windows
 
 setwd(path_to_dir)
 
@@ -22,13 +22,12 @@ treatments <- c(
   "Biased Up Layperson" = "bul"
 )
 
-# trying measure of accuracy which is inverse distance: the higher the more accurate
-df$inverse_post_inflation_accuracy <- ifelse(df$post_inflation_accuracy != 0, abs(1/df$post_inflation_accuracy), NA)
-df$inverse_post_inflation_accuracy <- 1/(1+df$post_inflation_accuracy^2)
+df %>% filter(treatment %in% c("nbl", "bdl", "bul")) %>% 
+  filter(abs(inflation_update) < 10) %>% 
+  ggplot(aes(x = inflation_update, fill = treatment)) +
+  geom_histogram()
 
-df$inverse_prior_inflation_accuracy <- 1/(1+df$prior_inflation_accuracy^2)
-
-#### graphs ####
+#### GRAPHS ####
 # mean inflation posterior
 df %>% 
   group_by(treatment) %>% 
@@ -128,23 +127,44 @@ df %>%
                     ymax = inflation_accuracy_mean + inflation_accuracy_sd))
 
 
-#### regressions ####
+#### REGRESSIONS ####
 reg <- function(x) {
   summary(lm(x, df))
 }
+reg(inflation_update ~ prior_inflation_accuracy*treatment + treatment + prior_inflation_accuracy)
 
 
 # compared to biased down expert, everybody else has a lower inflation update
 reg(inflation_update ~ treatment + prior_inflation_density_sd + prior_inflation_point + gender + political_party + employed + family_yearly_income)
-model1 <- reg(inflation_update ~ treatment + prior_inflation_density_sd + prior_inflation_point)
+reg(inflation_update ~ treatment + prior_inflation_density_sd + prior_inflation_point)
 
-
-model1$coefficients
 
 reg(post_inflation_accuracy ~ treatment + prior_inflation_accuracy + gender + political_party + employed + family_yearly_income)
-reg(post_inflation_accuracy ~ info_treat + bias_treat + info_treat*bias_treat + prior_inflation_accuracy + prior_inflation_density_sd + gender + political_party + employed + family_yearly_income)
+reg(post_inflation_accuracy ~ treatment + prior_inflation_density_sd + prior_inflation_point)
+
+reg(post_inflation_accuracy ~ relevel(as.factor(bias_treat), ref = "Non-biased") + prior_inflation_density_sd + prior_inflation_point)
+reg(post_inflation_accuracy ~ relevel(as.factor(info_treat), ref = "Layperson") + prior_inflation_density_sd + prior_inflation_point)
+
+reg(inflation_update ~ relevel(as.factor(bias_treat), ref = "Non-biased") + prior_inflation_density_sd + prior_inflation_point)
+reg(inflation_update ~ relevel(as.factor(info_treat), ref = "Layperson") + prior_inflation_density_sd + prior_inflation_point)
 
 
+for (i in seq_along(treatments)) {
+  for (j in seq_along(treatments)) {
+    t_test <- t.test(df[df$treatment == treatments[i], ]$inflation_update, df[df$treatment == treatments[j], ]$inflation_update)
+    p_value <- t_test[3]
+    if (p_value < .1) {
+      print(paste(names(treatments)[i], names(treatments)[j]))
+      print(t_test)
+    }
+  }
+}
+
+df %>% group_by(treatment) %>% 
+  summarise(mean())
+
+
+# diff between Non-biased Expert Biased Up Layperson
 
 t.test(inflation_update ~ info_treat, data = df)
 t.test(inflation_update ~ bias_treat, data = df %>% filter(bias_treat != "Non-biased"))
@@ -239,7 +259,7 @@ reg(post_inflation_accuracy_abs ~ treatment + gender + political_party + employe
 
 
 
-#### summary stats ####
+#### SUMMARY STATS ####
 df %>% group_by(treatment) %>% 
   summarise(mean = mean(post_inflation_accuracy, na.rm = T),
             sd = sd(post_inflation_accuracy, na.rm = T)) %>% 
@@ -395,7 +415,14 @@ df %>% group_by(post_ucsd_pop) %>%
   filter(n == 6)
 
 
+#### OLD STUFF, KEEPING AROUND FOR NOW ####
 
+# # trying measure of accuracy which is inverse distance: the higher the more accurate
+# df$inverse_post_inflation_accuracy <- ifelse(df$post_inflation_accuracy != 0, abs(1/df$post_inflation_accuracy), NA)
+# df$inverse_post_inflation_accuracy <- 1/(1+df$post_inflation_accuracy^2)
+# df$inverse_prior_inflation_accuracy <- 1/(1+df$prior_inflation_accuracy^2)
+# 
+# df$prior_inflation_accuracy <- abs(df$prior_inflation_accuracy)
 
 
 
